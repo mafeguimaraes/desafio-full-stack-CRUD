@@ -67,35 +67,70 @@ export const Form1 = ({ getEmpresas, onEdit, setOnEdit }) => {
       return toast.warn("Preencha todos os campos!");
     }
 
-    if (onEdit) {
-      await axios
-        .put("http://localhost:8800/" + onEdit.id, {
-          nome: empresa.nome.value,
-          cnpj: empresa.cnpj.value,
-          cep: empresa.cep.value,
-          empresas: empresa.empresas.value,
-        })
-        .then(({ data }) => toast.success(data))
-        .catch(({ data }) => toast.error(data));
-    } else {
-      await axios
-        .post("http://localhost:8800", {
-          nome: empresa.nome.value,
-          cnpj: empresa.cnpj.value,
-          cep: empresa.cep.value,
-          empresas: empresa.empresas.value,
-        })
-        .then(({ data }) => toast.success(data))
-        .catch(({ data }) => toast.error(data));
+    const cpfCnpjExists = await checkCpfCnpjExists(empresa.cpf.value);
+
+    if (cpfCnpjExists) {
+      return toast.error("CPF já cadastrado. Verifique os dados informados.");
     }
 
-    empresa.nome.value = "";
-    empresa.cnpj.value = "";
-    empresa.cep.value = "";
-    empresa.empresas.value = "";
+    const checkCpfCnpjExists = async (cpfCnpj) => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8800/empresas?cpf=" + cpfCnpj
+        );
+        const fornecedores = response.data;
 
-    setOnEdit(null);
-    getEmpresas();
+        return fornecedores.length > 0;
+      } catch (error) {
+        console.error("Erro ao verificar CPF:", error);
+        return false;
+      }
+    };
+
+    try {
+      const cepResponse = await axios.get(
+        `http://viacep.com.br/ws/${empresa.cep.value}/json/`
+      );
+      const cepData = cepResponse.data;
+
+      if (cepData.erro) {
+        return toast.error("CEP inválido. Verifique o CEP digitado.");
+      }
+
+      if (onEdit) {
+        await axios
+          .put("http://localhost:8800/" + onEdit.id, {
+            nome: empresa.nome.value,
+            cnpj: empresa.cnpj.value,
+            cep: empresa.cep.value,
+            empresas: empresa.empresas.value,
+          })
+          .then(({ data }) => toast.success(data))
+          .catch(({ data }) => toast.error(data));
+      } else {
+        await axios
+          .post("http://localhost:8800", {
+            nome: empresa.nome.value,
+            cnpj: empresa.cnpj.value,
+            cep: empresa.cep.value,
+            empresas: empresa.empresas.value,
+          })
+          .then(({ data }) => toast.success(data))
+          .catch(({ data }) => toast.error(data));
+      }
+
+      empresa.nome.value = "";
+      empresa.cnpj.value = "";
+      empresa.cep.value = "";
+      empresa.empresas.value = "";
+
+      setOnEdit(null);
+      getEmpresas();
+    } catch (error) {
+      toast.error(
+        "Erro ao consultar o CEP. Verifique sua conexão de internet."
+      );
+    }
   };
 
   return (
@@ -146,38 +181,77 @@ export const Form2 = ({ getFornecedores, onEdit, setOnEdit }) => {
       return toast.warn("Preencha todos os campos!");
     }
 
-    if (onEdit) {
-      await axios
-        .put("http://localhost:8800/" + onEdit.id, {
-          nome: fornecedor.nome.value,
-          email: fornecedor.email.value,
-          cep: fornecedor.cep.value,
-          cpf_ou_cnpj: fornecedor.cpf_ou_cnpj.value,
-          empresas: fornecedor.empresas.value,
-        })
-        .then(({ data }) => toast.success(data))
-        .catch(({ data }) => toast.error(data));
-    } else {
-      await axios
-        .post("http://localhost:8800", {
-          nome: fornecedor.nome.value,
-          email: fornecedor.email.value,
-          cep: fornecedor.cep.value,
-          cpf_ou_cnpj: fornecedor.cpf_ou_cnpj.value,
-          empresas: fornecedor.empresas.value,
-        })
-        .then(({ data }) => toast.success(data))
-        .catch(({ data }) => toast.error(data));
+    const cpfCnpjExists = await checkCpfCnpjExists(
+      fornecedor.cpf_ou_cnpj.value
+    );
+
+    if (cpfCnpjExists) {
+      return toast.error(
+        "CPF ou CNPJ já cadastrado. Verifique os dados informados."
+      );
     }
 
-    fornecedor.nome.value = "";
-    fornecedor.email.value = "";
-    fornecedor.cep.value = "";
-    fornecedor.cpf_ou_cnpj.value = "";
-    fornecedor.empresas.value = "";
+    const checkCpfCnpjExists = async (cpfCnpj) => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8800/fornecedores?cpf_ou_cnpj=" + cpfCnpj
+        );
+        const fornecedores = response.data;
 
-    setOnEdit(null);
-    getFornecedores();
+        return fornecedores.length > 0;
+      } catch (error) {
+        console.error("Erro ao verificar CPF ou CNPJ:", error);
+        return false;
+      }
+    };
+
+    try {
+      const cepResponse = await axios.get(
+        `https://viacep.com.br/ws/${fornecedor.cep.value}/json/`
+      );
+      const cepData = cepResponse.data;
+
+      if (cepData.erro) {
+        return toast.error("CEP inválido. Verifique o CEP digitado.");
+      }
+
+      if (onEdit) {
+        await axios
+          .put("http://localhost:8800/" + onEdit.id, {
+            nome: fornecedor.nome.value,
+            email: fornecedor.email.value,
+            cep: fornecedor.cep.value,
+            cpf_ou_cnpj: fornecedor.cpf_ou_cnpj.value,
+            empresas: fornecedor.empresas.value,
+          })
+          .then(({ data }) => toast.success(data))
+          .catch(({ data }) => toast.error(data));
+      } else {
+        await axios
+          .post("http://localhost:8800", {
+            nome: fornecedor.nome.value,
+            email: fornecedor.email.value,
+            cep: fornecedor.cep.value,
+            cpf_ou_cnpj: fornecedor.cpf_ou_cnpj.value,
+            empresas: fornecedor.empresas.value,
+          })
+          .then(({ data }) => toast.success(data))
+          .catch(({ data }) => toast.error(data));
+      }
+
+      fornecedor.nome.value = "";
+      fornecedor.email.value = "";
+      fornecedor.cep.value = "";
+      fornecedor.cpf_ou_cnpj.value = "";
+      fornecedor.empresas.value = "";
+
+      setOnEdit(null);
+      getFornecedores();
+    } catch (error) {
+      toast.error(
+        "Erro ao consultar o CEP. Verifique sua conexão de internet."
+      );
+    }
   };
 
   return (
